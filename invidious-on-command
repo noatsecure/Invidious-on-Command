@@ -31,11 +31,11 @@ maximum = 10
 cmd = {}
 
 # Define the commands
+cmd['USAGE'] = 'uu'
 cmd['NEXT_PAGE'] = ']'
 cmd['PREV_PAGE'] = '['
 cmd['SELECT'] = '.'
 cmd['SELECT_EXIT'] = ','
-cmd['INSTRUCTIONS'] = 'ii'
 cmd['REFRESH'] = 'rr'
 cmd['QUIT'] = 'qq'
 
@@ -70,6 +70,7 @@ def usage():
     # All available commands
     print('--------\nCOMMANDS\n--------')
     print(f"\t{cmd['SELECT']} \t Select a video to play")
+    print(f"\t{cmd['SELECT_EXIT']} \t Exit selection mode")
     print(f"\t{cmd['NEXT_PAGE']} \t Next page")
     print(f"\t{cmd['PREV_PAGE']} \t Previous page")
     print(f"\t{cmd['REFRESH']} \t Refresh results")
@@ -81,10 +82,96 @@ def usage():
 # FUNCTIONS ###
 ###############
 
+#---------------#
+#-- MESSAGING --#
+#---------------#
+class message:
+    def clear():
+        print("\033c")
+
+    def info(msg):
+        print(f"INFO: {msg}")
+
+    def warn(msg):
+        print(f"WARN: {msg}")
+
+    def error(msg):
+        print(f"ERROR: {msg}")
+        exit(1)
+
+    def quit(ans, msg = False):
+        # Check if the user has inputted the quit command
+        if ans == cmd['QUIT']:
+            # If a message was specified, then print the $msg
+            if msg: print(f"QUIT: {msg}")
+            # Exit without an error
+            exit(0)
+
+#-------------#
+#-- GENERAL --#
+#-------------#
+def address_bar(url):
+    # If the $url variable is set to False, then do not show the address bar
+    if url is False: return
+    # Print the current URL for the Invidious search query. This includes the page number too
+    print(f"\n>>> {url}\n")
+
+def str2int(ans):
+    try:
+        # Convert $ans into an integer. `.strip()` is used to remove all extraneous whitespace from the $ans string
+        return(int(ans.strip()))
+    except ValueError:
+        # If $ans could not be converted, return False instead
+        return(False)
+
 #-----------#
 #-- FETCH --#
 #-----------#
 class fetch:
+    def main(query, instances = False, url = False):
+        # Define the output variable here in case it doesn't get defined below
+        html = False
+        # If both the list of invidious instances has not been defined and the $url is False, return here
+        if (instances is False) and (url is False): return(url, html)
+        # Check if a $url has already been defined
+        if url:
+            # Obtain the HTML fpr the $url
+            html = fetch.submit(url)
+        else:
+            # Otherwise, iterate through each Invidious instance within the $instances list
+            for instance in instances:
+                # Define the URL to search $query for the current $instance. Defaults to page 1
+                url = urlparse(instance)._replace(path = f"search?q={quote(query)}&page=1").geturl()
+                # Obtain the HTML returned from the $url
+                html = fetch.submit(url)
+                # If no $html was obtained, then continue to the next Invidious instance
+                if html is False: continue
+                # Since the HTML was successfully obtained from the current $url, break the loop here
+                break
+        # Check if $html was defined
+        if not html:
+            # If not, then display a warning message to user that the instances (or network) failed
+            message.warn('Unable to connect to any Invidious instance!')
+            # And set $url to False
+            url = False
+        else:
+            # Decode the HTML to be str type
+            html = html.decode('utf8')
+        # Return the variables
+        return(url, html)
+
+    def submit(url):
+        # Display the $url to user
+        message.info(url)
+        # Attempt to obtain the HTML contents from the current $url
+        contents = fetch.download(url)
+        # If $contents is False, then continue to the next $instance
+        if not contents: return(False)
+        # Define the HTML contents returned from $url
+        html = contents.read()
+        # Return the $html
+        return(html) 
+
     def instances():
         # Message to user
         message.info('Generating a list of Invidious instances...')
@@ -114,114 +201,6 @@ class fetch:
             httpresponse = fetch.download(url, retry + 1)
         # Return the response from the $url
         return(httpresponse)
-    
-    def submit(url):
-        # Display the $url to user
-        message.info(url)
-        # Attempt to obtain the HTML contents from the current $url
-        contents = fetch.download(url)
-        # If $contents is False, then continue to the next $instance
-        if not contents: return(False)
-        # Define the HTML contents returned from $url
-        html = contents.read()
-        # Return the $html
-        return(html)
-    
-    def query(query, instances = False, url = False):
-        # Define the output variable here in case it doesn't get defined below
-        html = False
-        # If both the list of invidious instances has not been defined and the $url is False, return here
-        if (instances is False) and (url is False): return(url, html)
-        # Check if a $url has already been defined
-        if url:
-            # Obtain the HTML fpr the $url
-            html = fetch.submit(url)
-        else:
-            # Otherwise, iterate through each Invidious instance within the $instances list
-            for instance in instances:
-                # Define the URL to search $query for the current $instance. Defaults to page 1
-                url = urlparse(instance)._replace(path = f"search?q={quote(query)}&page=1").geturl()
-                # Obtain the HTML returned from the $url
-                html = fetch.submit(url)
-                # If no $html was obtained, then continue to the next Invidious instance
-                if html is False: continue
-                # Since the HTML was successfully obtained from the current $url, break the loop here
-                break
-        # Check if $html was defined
-        if not html:
-            # If not, then display a warning message to user that the instances (or network) failed
-            message.warn('Unable to connect to any Invidious instance!')
-            # And set $url to False
-            url = False
-        # Return $html and decode to be a string, and return the $url
-        return(url, html.decode('utf8'))
-
-#---------------#
-#-- MESSAGING --#
-#---------------#
-class message:
-    def clear():
-        print("\033c")
-
-    def info(msg):
-        print(f"INFO: {msg}")
-
-    def warn(msg):
-        print(f"WARN: {msg}")
-
-    def error(msg):
-        print(f"ERROR: {msg}")
-        exit(1)
-
-def quit(ans, msg = ""):
-    # Check if the user has inputted the quit command
-    if ans == cmd['QUIT']:
-        # If so, then print the $msg
-        print(msg)
-        # Exit without an error
-        exit(0)
-
-#-------------#
-#-- GENERAL --#
-#-------------#
-def address_bar(url):
-    # If the $url variable is set to False, then do not show the address bar
-    if url is False: return
-    # Print the current URL for the Invidious search query. This includes the page number too
-    print(f"\n>>> {url}\n")
-
-def str2int(ans):
-    try:
-        # Convert $ans into an integer. `.strip()` is used to remove all extraneous whitespace from the $ans string
-        return(int(ans.strip()))
-    except ValueError:
-        # If $ans could not be converted, return False instead
-        return(False)
-
-def unlist(lst):
-    try:
-        # Take the input $lst list and return the first index, whether that is a string, integer, etc.
-        return(lst[0])
-    except IndexError:
-        # If $lst is not a list, then return $lst as-is
-        return(lst)
-
-#---------------#
-#-- INVIDIOUS --#
-#---------------#
-def process(url, html): 
-    # If the HTML for the search term could not be obtained, then return here
-    if html is False: main(url)
-    # Parse the results of the current search term
-    videos = parse.main(url, html)
-    # Clear the screen
-    message.clear()
-    # Display the results to user
-    display(videos)
-    # Show the address bar (if applicable), which displays the URL for the current results
-    address_bar(url)
-    # Return to the main function so the user can choose to search again or select and play a video
-    main(url, videos)
 
 #-----------#
 #-- PARSE --#
@@ -231,7 +210,7 @@ class parse:
         # split the HTML via newlines
         html = [x.strip() for x in html.split("\n")]
         # Obtain a list containing the HTML contents for each video in the results
-        videos_html = parse.parse(html)
+        videos_html = parse.html(html)
         # Define a dictionary to hold all each video URL with their full information
         videos = {}
         # Iterate through each video within the $videos_html list
@@ -247,17 +226,17 @@ class parse:
             # Obtain the duration of each video
             duration = parse.durations(video_html)
             # Obtain the number of views for each video
-            view = parse.views(video_html)
+            view_count = parse.views(video_html)
             # Obtain the title of each video
             title = parse.titles(video_html)
             # Concatenate all of the above information
-            info = f"{title}\n\t| {upload_date} | {view} | {duration} | {channel_name}\n"
+            info = f"{title}\n\t| {upload_date} | {view_count} | {duration} | {channel_name}\n"
             # Only add the current video to the output dictionary if it has a title
             if title: videos[info] = video_url
         # return the dictionary
         return(videos)
 
-    def parse(html):
+    def html(html):
         # Define a list that contains the start and ending indexes for each video within the results. Eg. [1, 15, 30, 45] would mean that $html[1] to $html[15] is the HTML for the first video in the results
         videos_index = [i for i in range(0, len(html)) if html[i] == '<div class="h-box">']
         # For each index within $videos_index, create a tuple containing the current index and the next index. Eg. [1, 15, 30, 45] --> [(1, 15), (15, 30), (30, 45)]. This is a defined list of tuples containing the start and ending indexes of each video's HTML
@@ -337,9 +316,9 @@ class parse:
             video_url = f"https://www.youtube.com/{video_id}"
         else:
             # The string '&local=true' proxies all videos through Invidious, which will not make any connections to YouTube
-            #video_url = f"{url.rsplit('/', 1)[0]}/{video_id}" # Invidious
+            video_url = f"{url.rsplit('/', 1)[0]}/{video_id}" # Invidious
             #video_url = f"{url.rsplit('/', 1)[0]}/{video_id}&local=true" # Invidious (Proxy)
-            video_url = f"https://www.youtube.com/{video_id}" # YouTube
+            #video_url = f"https://www.youtube.com/{video_id}" # YouTube (breaks viewing channels)
         # Return the $url
         return(video_url)
 
@@ -365,31 +344,31 @@ def display(videos):
 class select:
     def __init__(self, url, videos):
         # If there are no videos to select, then return
-        if videos is False: main(url)
+        if videos is False: main.menu(url)
         # Obtain the full information for each video including title, upload date, channel name, duration, etc.
         info = list(videos.keys())
         # Start the select menu
         self.menu(videos, info)
         # Return to the main menu and pass the $videos dictionary so the user can either choose to select another video from the current list, or enter a new search term
-        main(url, videos)
+        main.menu(url, videos)
 
     def menu(self, videos, info):
         # Start an infinite loop until the user enters the break command
         while True:
             # Obtain the user's input on which video to play
-            ans = input("Select video index (press '%s' to exit): " % (cmd["SELECT_EXIT"])).strip()
+            ans = input(f"Select video index (press '{cmd['SELECT_EXIT']}' to exit): ").strip()
             # Check if the quit command was passed
-            quit(ans)
+            message.quit(ans)
             # Check if the break command was passed
-            if ans == cmd["SELECT_EXIT"]: break
+            if ans == cmd['SELECT_EXIT']: break
             # Check if multiple videos have been selected; comma delimited
             self.parse(ans, videos, info)
             # Check if a user-defined playlist was specified
             self.playlist(ans, videos, info)
 
     def parse(self, ans, videos, info):
-        # Split via the "," character, which is used to play multiple videos or even just one
-        ans = [str2int(x) for x in ans.split(",")]
+        # Split via the specified delimiter, which is used to play multiple videos or even just one
+        ans = [str2int(x) for x in ans.split(',')]
         # If playlist syntax was used (eg. '1 < 2'), then return here. This is done by using `any` to determine if all entries are False. However, since integers are non-boolean they will return False, so the following expression is used to convert them to True, which works fast enough. Note that `all` won't work in this case
         if any([False if a is False else True for a in ans]) is False: return
         # Iterate through all selected videos and play them
@@ -405,10 +384,10 @@ class select:
             else:
                 # Start all videos with vindex greater than 1 automatically paused. This is done because all videos play at once, so only the first should be playing
                 self.play(vindex, videos, info, is_paused = True)
- 
+
     def playlist(self, ans, videos, info):
-       # Split via the "<" character, which defines a playlist
-        ans = [str2int(x) for x in ans.split("<")]
+       # Split via the specified delimiter, which defines a playlist
+        ans = [str2int(x) for x in ans.split('<')]
         # If the length of list $ans is 1, then there was no playlist specified by user, so return False
         if len(ans) == 1: return
         # Total number of videos within $videos. This variable is used to determine if the selected video indexes are out of range
@@ -426,13 +405,13 @@ class select:
         # Using each video title within the $titles list as a key, obtain the corresponding URL for each video title
         urls = [videos[title] for title in titles]
         # Display message to user detailing the videos that will be played
-        message.info("Creating a playlist containing the following videos:\n")
+        message.info('Creating a playlist containing the following videos:\n')
         # Show only the title of the videos that will be placed in the playlist
         for i in range(len(titles)): print(f"\t{i + 1}) %s | {urls[i]}" % (titles[i].split('\n')[0]))
         # Define the path to the temporary playlist file
         filename = Path('/tmp/playlist.txt').expanduser()
         # Create a temporary file for the playlist
-        with open(filename, "w") as txt: [txt.write(f"{url}\n") for url in urls]
+        with open(filename, 'w') as txt: [txt.write(f"{url}\n") for url in urls]
         # Play the playlist. Note that this will stall the script until the playlist has finished playing
         Popen(mpv + [f"--playlist={filename}"], stderr = DEVNULL, stdout = DEVNULL).communicate()
         # Once the playlist is done, remove the file
@@ -444,46 +423,62 @@ class select:
             title = info[vindex]
         except IndexError:
             # If the selected video index is not valid (eg. 100, -1), then display a warning message and allow the user to try again
-            message.warn("Invalid video index, please try again.")
+            message.warn('Invalid video index, please try again.')
             return(False)
         # Define the URL to pass to mpv
         video_url = videos[title]
-        if "/channel/" in video_url: channel(video_url)
+        # Check if the $video_url contains the specified string, which means its a channel page
+        if channel.check(video_url): channel.main(video_url)
         # By default, do not start the video in paused mode
-        paused = [""]
+        paused = ['']
         # If $is_paused is True, then play the video but start it paused
-        if is_paused is True: paused = ["--pause"]
+        if is_paused is True: paused = ['--pause']
         # Display message to user
         print(f"\tPlaying: '%s' | {video_url}" % (title.split('\n')[0]))
         # Play the video
         Popen(mpv + paused + [video_url], stderr = DEVNULL, stdout = DEVNULL)
 
-def channel(channel_url):
-    # Fix the URL for the channel
-    channel_url = channel_url.split("&local")[0].strip()
-    # Clear the screen for the channel's videos
-    message.clear()
-    # Define the channel's URL by adding the page number so the user can browse through multiple pages. Note that the syntax for channel pages is "?page=" rather than "&page=", which is used for results
-    channel_url = f"{channel_url}?page=1"
-    # Obtain the HTML for the $channel_url
-    [_, html] = fetch.query(False, False, channel_url)
-    # Obtain and display the channel's videos to the user
-    process(channel_url, html)
+#-------------#
+#-- CHANNEL --#
+#-------------#
+class channel:
+    def main(channel_url):
+        # Fix the URL for the channel
+        channel_url = channel_url.split('&local')[0].strip()
+        # Clear the screen for the channel's videos
+        message.clear()
+        # Define the channel's URL by adding the page number so the user can browse through multiple pages. Note that the syntax for channel pages is "?page=" rather than "&page=", which is used for results
+        channel_url = f"{channel_url}?page=1"
+        # Obtain the HTML for the $channel_url
+        [_, html] = fetch.main(False, False, channel_url)
+        # Obtain and display the channel's videos to the user
+        main.process(channel_url, html)
 
+    def check(url):
+        # Default behaviour is to assume the $url is a channel
+        is_channel = True
+        try:
+            # Check if the specified regex is found within $url. If so, then $url is a channel URL
+            is_channel = search(r'[\w].+/channel/', url).group()
+        except AttributeError:
+            # Otherwise the $url is not a channel URL
+            is_channel = False
+        # Return the bool
+        return(is_channel)
+
+#-----------#
+#-- PAGES --#
+#-----------#
 def pages(url, ans): 
     # In order to move to the next/previous page, there needs to be a current set of results
     if url is False: return(False)
-    try:
-        is_channel = search(r'[\w].+/channel/', url).group()
-    except AttributeError:
-        is_channel = False
-    # Check if the $url is for a YouTube channel
-    if is_channel:
+    # Check if the $url specifies a YouTube channel
+    if channel.check(url):
         # If so, then specify a different string since channel URLs have a different syntax than the results page
-        page_syntax = "?page="
+        page_syntax = '?page='
     else:
         # Otherwise use a normal page syntax
-        page_syntax = "&page="
+        page_syntax = '&page='
     # Split the URL into the search term and page number
     url_split = url.split(page_syntax)
     try:
@@ -493,10 +488,10 @@ def pages(url, ans):
         # If the $url_split list has only one entry, then it will be page 1 by default
         page_index = 1
     # If the command to go to the next page was passed, then increase the current page index by one
-    if ans == cmd["NEXT_PAGE"]:
+    if ans == cmd['NEXT_PAGE']:
         page_index = page_index + 1
     # If the command to go to the previous page was passed, then decrease the current page index by one
-    elif ans == cmd["PREV_PAGE"]:
+    elif ans == cmd['PREV_PAGE']:
         page_index = page_index - 1
     # If the user specified to go back from page 1, then return the original URL as-is since this is not possible
     if page_index < 1:
@@ -508,48 +503,61 @@ def pages(url, ans):
 ############
 ### MAIN ###
 ############
-def main(url = False, videos = False):
-    # Start an infinite loop for the main menu
-    while True:
-        # Obtain user's input
-        ans = input("Search: ").strip()
-        # Determine if the quit command was passed
-        quit(ans)
-        # Check if any of the commands were passed
-        if ans == cmd["SELECT"]:
-            # If $ans is the command to select a video, then call the select function
-            select(url, videos)
-        elif ans == cmd["NEXT_PAGE"] or ans == cmd["PREV_PAGE"]:
-            # If $ans is the command to move to the next/previous page of results, then call the pages function
-            url = pages(url, ans)
-            # Only fetch the HTML for the $url
-            [_, html] = fetch.query(False, False, url)
-        elif ans == cmd["INSTRUCTIONS"]:
-            # Show the usage and commands for using this script
-            usage()
-            # Since no search terms were passed, then continue here so '!i' doesn't become a search term
-            continue
-        elif ans == cmd["REFRESH"]:
-            # Only fetch the HTML for the $url
-            [_, html] = fetch.query(False, False, url)
-            # If $ans is the command to refresh the search results, then call the `process` function if and only if the $url is not False 
-            if url is not False: process(url, html)
-        elif len(ans) <= 1:
-            # If the search term is less than or equal to one character, then continue
-            continue
-        else:
-            # Generate a list of Invidious instances to use for this session
-            instances = fetch.instances()
-            # Fetch the Invidious $url and $html for the current search term
-            [url, html] = fetch.query(ans, instances)
-        # If a URL has not been defined, then continue
-        if url is False: continue
-        # Fetch the results for the current search term and display them to the user
-        process(url, html)
+class main:
+    def menu(url = False, videos = False):
+        # Start an infinite loop for the main menu
+        while True:
+            # Obtain user's input
+            ans = input('Search: ').strip()
+            # Determine if the quit command was passed
+            message.quit(ans)
+            # Check if any of the commands were passed
+            if ans == cmd['SELECT']:
+                # If $ans is the command to select a video, then call the select function
+                select(url, videos)
+            elif ans == cmd['NEXT_PAGE'] or ans == cmd['PREV_PAGE']:
+                # If $ans is the command to move to the next/previous page of results, then call the pages function
+                url = pages(url, ans)
+                # Only fetch the HTML for the $url
+                [_, html] = fetch.main(False, False, url)
+            elif ans == cmd['USAGE']:
+                # Show the usage and commands for using this script
+                usage()
+                # Since no search terms were passed, then continue here so the usage command doesn't become a search term
+                continue
+            elif ans == cmd['REFRESH']:
+                # Only fetch the HTML for the $url
+                [_, html] = fetch.main(False, False, url)
+                # If $ans is the command to refresh the search results, then call the specified function if and only if the $url is not False 
+                if url is not False: main.process(url, html)
+            elif len(ans) <= 1:
+                # If the search term is less than or equal to one character, then continue
+                continue
+            else:
+                # Generate a list of Invidious instances to use for this session
+                instances = fetch.instances()
+                # Fetch the Invidious $url and $html for the current search term
+                [url, html] = fetch.main(ans, instances)
+            # Process the $url and $html in order to display the results to user
+            main.process(url, html)
+
+    def process(url, html):
+        # If the URL or HTML for the search term could not be obtained, then return to the main menu
+        if (url is False) or (html is False): main.menu(url)
+        # Parse the results of the current search term
+        videos = parse.main(url, html)
+        # Clear the screen
+        message.clear()
+        # Display the results to user
+        display(videos)
+        # Show the address bar (if applicable), which displays the URL for the current results
+        address_bar(url)
+        # Return to the main menu function so the user can choose to search again or select and play a video
+        main.menu(url, videos)
 
 #############
 ### START ###
 #############
 if __name__ == "__main__":
-    # Execute the main function to start the script
-    main()
+    # Execute the main menu function to start the script
+    main.menu()
