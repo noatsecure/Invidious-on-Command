@@ -42,7 +42,10 @@ This will create a file "/tmp/playlist.txt" and will play the videos in the orde
 YouTube channels are shown in the results and can be selected in the same manner as a video index. Upon selecting a channel, another set of results will be shown from the channel's page, allowing you to select any of the videos shown.
 
 ## Pages
-This script allows you to browse multiple pages of results. Enter the `]` or right bracket character to move forward one page, or enter the `[` (left bracket character) to move back to the previous page.
+This script allows you to browse multiple pages of results. Enter the `]` (right bracket character) to move forward one page, or enter the `[` (left bracket character) to move back to the previous page.
 
 ## Reload
 Sometimes you will search and there will be no results. In this instance you can enter the `rr` string to reload the results. Note that this script will only show what your particular Invidious shows, so any issues will need to be fixed on the instance's end.
+
+## Quitting
+Enter the `qq` command to exit the script.
