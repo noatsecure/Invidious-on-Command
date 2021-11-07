@@ -1,5 +1,5 @@
 # Invidious on Command
-This Python script allows you to browse Invidious, a front-end to YouTube, as well as select and play videos with mpv. It was written in Python 3 and requires no external dependencies outside of the standard library.
+This Python script allows you to browse Invidious, a front-end to YouTube, as well as select and play videos with mpv. It was written in Python 3 and requires no external Python dependencies outside of the standard library. The media player [mpv](https://mpv.io) should also be installed, along with either [youtube-dl](https://youtube-dl.org), or its fork, [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 
 ## Commands
 There are a number of built-in commands, which are entered into the script the same way search queries are. An exhaustive list of commands and their constraints are shown below:
