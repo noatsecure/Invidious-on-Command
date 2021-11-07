@@ -6,7 +6,6 @@
 from html import unescape
 from json import loads
 from os import remove
-from os.path import expanduser,isfile
 from pathlib import Path
 from re import compile,search
 from subprocess import DEVNULL,Popen
@@ -32,13 +31,13 @@ maximum = 10
 cmd = {}
 
 # Define the commands
-cmd["NEXT_PAGE"] = "]"
-cmd["PREV_PAGE"] = "["
-cmd["SELECT"] = "."
-cmd["SELECT_EXIT"] = ","
-cmd["INSTRUCTIONS"] = "ii"
-cmd["REFRESH"] = "rr"
-cmd["QUIT"] = "qq"
+cmd['NEXT_PAGE'] = ']'
+cmd['PREV_PAGE'] = '['
+cmd['SELECT'] = '.'
+cmd['SELECT_EXIT'] = ','
+cmd['INSTRUCTIONS'] = 'ii'
+cmd['REFRESH'] = 'rr'
+cmd['QUIT'] = 'qq'
 
 ####################
 ### MEDIA PLAYER ###
@@ -55,28 +54,28 @@ mpv_options = '--ytdl-format=mp4                   \
 # Define the mpv media player and add the above options so they are automatically used later when mpv is called.
 mpv = ['mpv', '--no-terminal'] + mpv_options.split()
 
-####################
-### INSTRUCTIONS ### 
-####################
-def instructions():
+#############
+### USAGE ### 
+#############
+def usage():
     # Instructions on how to use the script
-    print("------------\nINSTRUCTIONS\n------------")
-    print("\t--> Searching:\n")
-    print("\t\tEnter your seach query to obtain a list of all videos for that term.\n")
-    print("\t--> Selection Mode:\n")
+    print('------------\nUSAGE\n------------')
+    print('\t--> Searching:\n')
+    print('\t\tEnter your seach query to obtain a list of all videos for that term.\n')
+    print('\t--> Selection Mode:\n')
     print(f"\t\tTo select a video to play, use the '{cmd['SELECT']}' command to enter selection mode, where you input the video index of the video(s) to play (eg. 1). While in selection mode, you can also input a comma delimited list of video indexes (eg. 0,1,2) in order to play all selected videos at once; here, only the first video will autoplay and the rest will start paused.\n")
     print(f"\t\tTo exit selection mode, use the '{cmd['SELECT_EXIT']}' command.\n")
     print("\t--> Navigating:\n")
     print(f"\t\tUse '{cmd['NEXT_PAGE']}' to navigate to the next page of search results, and '{cmd['PREV_PAGE']}' brings you back to the previous page.\n")
     # All available commands
-    print("--------\nCOMMANDS\n--------")
+    print('--------\nCOMMANDS\n--------')
     print(f"\t{cmd['SELECT']} \t Select a video to play")
     print(f"\t{cmd['NEXT_PAGE']} \t Next page")
     print(f"\t{cmd['PREV_PAGE']} \t Previous page")
     print(f"\t{cmd['REFRESH']} \t Refresh results")
     print(f"\t{cmd['QUIT']} \t Quit")
     # Add a newline to separate this welcome message with the input field
-    print("\n")
+    print('\n')
 
 ###############
 # FUNCTIONS ###
@@ -165,18 +164,18 @@ class message:
         print("\033c")
 
     def info(msg):
-        print("INFO: %s" % (msg))
+        print(f"INFO: {msg}")
 
     def warn(msg):
-        print("WARN: %s" % (msg))
+        print(f"WARN: {msg}")
 
     def error(msg):
-        print("ERROR: %s" % (msg))
+        print(f"ERROR: {msg}")
         exit(1)
 
 def quit(ans, msg = ""):
     # Check if the user has inputted the quit command
-    if ans == cmd["QUIT"]:
+    if ans == cmd['QUIT']:
         # If so, then print the $msg
         print(msg)
         # Exit without an error
@@ -252,7 +251,7 @@ class parse:
             # Obtain the title of each video
             title = parse.titles(video_html)
             # Concatenate all of the above information
-            info = "%s\n\t| %s | %s | %s | %s\n" % (title, upload_date, view, duration, channel_name)
+            info = f"{title}\n\t| {upload_date} | {view} | {duration} | {channel_name}\n"
             # Only add the current video to the output dictionary if it has a title
             if title: videos[info] = video_url
         # return the dictionary
@@ -333,14 +332,14 @@ class parse:
         if not video_id:
             # If so, then return this variable, which the `parse.search` function will have defined as an empty string ("")
             return(video_id)
-        elif video_id.startswith("playlist"):
+        elif video_id.startswith('playlist'):
             # Otherwise, if the video identifier starts with the string 'playlist', then change the URL from the current Invidious instance to YouTube. This is done because mpv handles YouTube playlists but not Invidious ones
             video_url = f"https://www.youtube.com/{video_id}"
         else:
             # The string '&local=true' proxies all videos through Invidious, which will not make any connections to YouTube
-            video_url = f"{url.rsplit('/', 1)[0]}/{video_id}" # Invidious
+            #video_url = f"{url.rsplit('/', 1)[0]}/{video_id}" # Invidious
             #video_url = f"{url.rsplit('/', 1)[0]}/{video_id}&local=true" # Invidious (Proxy)
-            #video_url = "https://www.youtube.com/%s" % (video_id) # YouTube
+            video_url = f"https://www.youtube.com/{video_id}" # YouTube
         # Return the $url
         return(video_url)
 
@@ -431,7 +430,7 @@ class select:
         # Show only the title of the videos that will be placed in the playlist
         for i in range(len(titles)): print(f"\t{i + 1}) %s | {urls[i]}" % (titles[i].split('\n')[0]))
         # Define the path to the temporary playlist file
-        filename = expanduser('/tmp/playlist.txt')
+        filename = Path('/tmp/playlist.txt').expanduser()
         # Create a temporary file for the playlist
         with open(filename, "w") as txt: [txt.write(f"{url}\n") for url in urls]
         # Play the playlist. Note that this will stall the script until the playlist has finished playing
@@ -523,18 +522,18 @@ def main(url = False, videos = False):
         elif ans == cmd["NEXT_PAGE"] or ans == cmd["PREV_PAGE"]:
             # If $ans is the command to move to the next/previous page of results, then call the pages function
             url = pages(url, ans)
-            # Generate a list of Invidious instances to use for this session
-            instances = fetch.instances()
             # Only fetch the HTML for the $url
-            [_, html] = fetch.query(False, instances, url)
+            [_, html] = fetch.query(False, False, url)
         elif ans == cmd["INSTRUCTIONS"]:
-            # Show the instructions and commands for using this script
-            instructions()
+            # Show the usage and commands for using this script
+            usage()
             # Since no search terms were passed, then continue here so '!i' doesn't become a search term
             continue
         elif ans == cmd["REFRESH"]:
+            # Only fetch the HTML for the $url
+            [_, html] = fetch.query(False, False, url)
             # If $ans is the command to refresh the search results, then call the `process` function if and only if the $url is not False 
-            if url is not False: process(url)
+            if url is not False: process(url, html)
         elif len(ans) <= 1:
             # If the search term is less than or equal to one character, then continue
             continue
