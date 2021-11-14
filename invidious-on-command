@@ -316,8 +316,8 @@ class parse:
             video_url = f"https://www.youtube.com/{video_id}"
         else:
             # The string '&local=true' proxies all videos through Invidious, which will not make any connections to YouTube
-            video_url = f"{url.rsplit('/', 1)[0]}/{video_id}" # Invidious
-            #video_url = f"{url.rsplit('/', 1)[0]}/{video_id}&local=true" # Invidious (Proxy)
+            video_url = f"{search(r'https://[a-zA-Z0-9.]+', url).group()}/{video_id}" # Invidious
+            #video_url = f"{search(r'https://[a-zA-Z0-9.]+', url).group()}/{video_id}&local=true" # Invidious (Proxy)
             #video_url = f"https://www.youtube.com/{video_id}" # YouTube (breaks viewing channels)
         # Return the $url
         return(video_url)
@@ -455,16 +455,14 @@ class channel:
         main.process(channel_url, html)
 
     def check(url):
-        # Default behaviour is to assume the $url is a channel
-        is_channel = True
         try:
             # Check if the specified regex is found within $url. If so, then $url is a channel URL
-            is_channel = search(r'[\w].+/channel/', url).group()
+            search(r'[\w].+/channel/', url).group()
         except AttributeError:
             # Otherwise the $url is not a channel URL
-            is_channel = False
-        # Return the bool
-        return(is_channel)
+            return(False)
+        # If the $url specifies a channel page then return True
+        return(True) 
 
 #-----------#
 #-- PAGES --#
