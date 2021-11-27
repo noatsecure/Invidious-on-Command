@@ -133,6 +133,12 @@ class fetch:
         html = False
         # If both the list of invidious instances has not been defined and the $url is False, return here
         if (instances is False) and (url is False): return(url, html)
+        # Check if the $instances list is empty
+        if not instances:
+            # If so, then display a warning message to the user
+            message.warn(f"The following link that provides all Invidious instances appears to be down, falling back to a hardcoded list of known instances: {api_invidious_io}")
+            # Fall back to a list of known good instances
+            instances = ['https://invidious.kavin.rocks', 'https://invidious.snopyta.org', 'https://yewtu.be']
         # Check if a $url has already been defined
         if url:
             # Obtain the HTML fpr the $url
