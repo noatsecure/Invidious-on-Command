@@ -184,7 +184,7 @@ class fetch:
         # Attempt to obtain the list of invidious instances from $url
         httpresponse = fetch.download(api_invidious_io)
         # If $httpresponse is False, then exit here since the website is unavailable
-        if not httpresponse: message.error(f"Unable to connect to: '{url}'")
+        if not httpresponse: message.error(f"Unable to connect to: '{api_invidious_io}'")
         # The list of Invidious instances is in JSON format
         json = loads(httpresponse.read())
         # For each entry in $json, obtain the URL, which is in $entry[1]. The name of the website is $entry[0]
