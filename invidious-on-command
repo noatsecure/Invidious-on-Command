@@ -31,7 +31,7 @@ maximum = 10
 cmd = {}
 
 # Define the commands
-cmd['USAGE'] = 'uu'
+cmd['USAGE'] = 'hh'
 cmd['NEXT_PAGE'] = ']'
 cmd['PREV_PAGE'] = '['
 cmd['SELECT'] = '.'

@@ -6,13 +6,13 @@ There are a number of built-in commands, which are entered into the script the s
 
 | Command | Description | Availability |
 |---------|:-----------:|--------------|
-| `uu`  | Show the usage information | Everywhere except selection mode            |
-| `rr`  | Reload the page            | Only when search results/channels are shown |
-| `qq`  | Quit                       | Everywhere                                  |
-| `.`   | Enter selection mode       | Only when search results/channels are shown |
-| `,`   | Exit selection mode        | Only while in selection mode                |
-| `]`   | Next page                  | Only when search results/channels are shown |
-| `[`   | Previous page              | Only when search results/channels are shown |
+| `hh`  | Show the help/usage information | Everywhere except selection mode            |
+| `rr`  | Reload the page                 | Only when search results/channels are shown |
+| `qq`  | Quit                            | Everywhere                                  |
+| `.`   | Enter selection mode            | Only when search results/channels are shown |
+| `,`   | Exit selection mode             | Only while in selection mode                |
+| `]`   | Next page                       | Only when search results/channels are shown |
+| `[`   | Previous page                   | Only when search results/channels are shown |
 
 ## Searching
 To browse videos, type your search query into the script to search Invidous. This process involves connecting the Invidious API in order to select an instance and obtain the results. Videos are streamed through their Invidious URL, just as they would normally play in the browser. However, YouTube playlists are streamed through YouTube since Invidious does not support this feature.
