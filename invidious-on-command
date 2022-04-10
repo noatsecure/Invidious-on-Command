@@ -128,7 +128,7 @@ def str2int(ans):
 #-- FETCH --#
 #-----------#
 class fetch:
-    def main(query, instances = False, url = False):
+    def main(query, url = False, instances = False):
         # Define the output variable here in case it doesn't get defined below
         html = False
         # If both the list of invidious instances has not been defined and the $url is False, return here
@@ -137,6 +137,8 @@ class fetch:
         if not instances:
             # If so, then display a warning message to the user
             message.warn(f"The following link that provides all Invidious instances appears to be down, falling back to a hardcoded list of known instances: {api_invidious_io}")
+            # TEMP
+            input("Pause")
             # Fall back to a list of known good instances
             instances = ['https://invidious.kavin.rocks', 'https://invidious.snopyta.org', 'https://yewtu.be']
         # Check if a $url has already been defined
@@ -348,17 +350,17 @@ def display(videos):
 #-- SELECT --#
 #------------#
 class select:
-    def __init__(self, url, videos):
+    def __init__(self, url, videos, instances):
         # If there are no videos to select, then return
-        if videos is False: main.menu(url)
+        if videos is False: main.menu(url, instances = instances)
         # Obtain the full information for each video including title, upload date, channel name, duration, etc.
         info = list(videos.keys())
         # Start the select menu
-        self.menu(videos, info)
+        self.menu(videos, info, instances)
         # Return to the main menu and pass the $videos dictionary so the user can either choose to select another video from the current list, or enter a new search term
-        main.menu(url, videos)
+        main.menu(url, videos, instances = instances)
 
-    def menu(self, videos, info):
+    def menu(self, videos, info, instances):
         # Start an infinite loop until the user enters the break command
         while True:
             # Obtain the user's input on which video to play
@@ -368,11 +370,11 @@ class select:
             # Check if the break command was passed
             if ans == cmd['SELECT_EXIT']: break
             # Check if multiple videos have been selected; comma delimited
-            self.parse(ans, videos, info)
+            self.parse(ans, videos, info, instances)
             # Check if a user-defined playlist was specified
             self.playlist(ans, videos, info)
 
-    def parse(self, ans, videos, info):
+    def parse(self, ans, videos, info, instances):
         # Split via the specified delimiter, which is used to play multiple videos or even just one
         ans = [str2int(x) for x in ans.split(',')]
         # If playlist syntax was used (eg. '1 < 2'), then return here. This is done by using `any` to determine if all entries are False. However, since integers are non-boolean they will return False, so the following expression is used to convert them to True, which works fast enough. Note that `all` won't work in this case
@@ -386,10 +388,10 @@ class select:
             # Check if the current video index is the first one in the list
             if i == 0:
                 # If so, then play it normally without pausing
-                self.play(vindex, videos, info)
+                self.play(vindex, videos, info, instances)
             else:
                 # Start all videos with vindex greater than 1 automatically paused. This is done because all videos play at once, so only the first should be playing
-                self.play(vindex, videos, info, is_paused = True)
+                self.play(vindex, videos, info, instances, is_paused = True)
 
     def playlist(self, ans, videos, info):
        # Split via the specified delimiter, which defines a playlist
@@ -423,7 +425,7 @@ class select:
         # Once the playlist is done, remove the file
         remove(filename)
 
-    def play(self, vindex, videos, info, is_paused = False):
+    def play(self, vindex, videos, info, instances, is_paused = False):
         try:
             # Obtain the title of the specified $vindex
             title = info[vindex]
@@ -434,7 +436,7 @@ class select:
         # Define the URL to pass to mpv
         video_url = videos[title]
         # Check if the $video_url contains the specified string, which means its a channel page
-        if channel.check(video_url): channel.main(video_url)
+        if channel.check(video_url): channel.main(video_url, instances)
         # By default, do not start the video in paused mode
         paused = ['']
         # If $is_paused is True, then play the video but start it paused
@@ -448,7 +450,7 @@ class select:
 #-- CHANNEL --#
 #-------------#
 class channel:
-    def main(channel_url):
+    def main(channel_url, instances):
         # Fix the URL for the channel
         channel_url = channel_url.split('&local')[0].strip()
         # Clear the screen for the channel's videos
@@ -456,9 +458,9 @@ class channel:
         # Define the channel's URL by adding the page number so the user can browse through multiple pages. Note that the syntax for channel pages is "?page=" rather than "&page=", which is used for results
         channel_url = f"{channel_url}?page=1"
         # Obtain the HTML for the $channel_url
-        [_, html] = fetch.main(False, False, channel_url)
+        [_, html] = fetch.main(False, channel_url, instances)
         # Obtain and display the channel's videos to the user
-        main.process(channel_url, html)
+        main.process(channel_url, html, instances)
 
     def check(url):
         try:
@@ -508,7 +510,7 @@ def pages(url, ans):
 ### MAIN ###
 ############
 class main:
-    def menu(url = False, videos = False):
+    def menu(url = False, videos = False, instances = False):
         # Start an infinite loop for the main menu
         while True:
             # Obtain user's input
@@ -518,12 +520,12 @@ class main:
             # Check if any of the commands were passed
             if ans == cmd['SELECT']:
                 # If $ans is the command to select a video, then call the select function
-                select(url, videos)
+                select(url, videos, instances)
             elif ans == cmd['NEXT_PAGE'] or ans == cmd['PREV_PAGE']:
                 # If $ans is the command to move to the next/previous page of results, then call the pages function
                 url = pages(url, ans)
                 # Only fetch the HTML for the $url
-                [_, html] = fetch.main(False, False, url)
+                [_, html] = fetch.main(False, url, instances)
             elif ans == cmd['USAGE']:
                 # Show the usage and commands for using this script
                 usage()
@@ -531,7 +533,7 @@ class main:
                 continue
             elif ans == cmd['REFRESH']:
                 # Only fetch the HTML for the $url
-                [_, html] = fetch.main(False, False, url)
+                [_, html] = fetch.main(False, url, instances)
                 # If $ans is the command to refresh the search results, then call the specified function if and only if the $url is not False 
                 if url is not False: main.process(url, html)
             elif len(ans) <= 1:
@@ -539,13 +541,13 @@ class main:
                 continue
             else:
                 # Generate a list of Invidious instances to use for this session
-                instances = fetch.instances()
+                if instances is False: instances = fetch.instances()
                 # Fetch the Invidious $url and $html for the current search term
-                [url, html] = fetch.main(ans, instances)
+                [url, html] = fetch.main(ans, instances = instances)
             # Process the $url and $html in order to display the results to user
-            main.process(url, html)
+            main.process(url, html, instances)
 
-    def process(url, html):
+    def process(url, html, instances):
         # If the URL or HTML for the search term could not be obtained, then return to the main menu
         if (url is False) or (html is False): main.menu(url)
         # Parse the results of the current search term
@@ -557,7 +559,7 @@ class main:
         # Show the address bar (if applicable), which displays the URL for the current results
         address_bar(url)
         # Return to the main menu function so the user can choose to search again or select and play a video
-        main.menu(url, videos)
+        main.menu(url, videos, instances)
 
 #############
 ### START ###
