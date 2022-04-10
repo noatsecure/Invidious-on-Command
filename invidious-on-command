@@ -535,7 +535,7 @@ class main:
                 # Only fetch the HTML for the $url
                 [_, html] = fetch.main(False, url, instances)
                 # If $ans is the command to refresh the search results, then call the specified function if and only if the $url is not False 
-                if url is not False: main.process(url, html)
+                if url is not False: main.process(url, html, instances)
             elif len(ans) <= 1:
                 # If the search term is less than or equal to one character, then continue
                 continue
