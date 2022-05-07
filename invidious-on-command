@@ -270,17 +270,28 @@ class parse:
             # Otherwise, return an empty string
             return("")
 
+    def verified(var):
+        checkmark_html = search('(&nbsp;|)<i class="icon ion ion-md-checkmark-circle"></i>', var)
+        try:
+            checkmark_html = checkmark_html.group()
+        except AttributeError:
+            return(var)
+        var = var.replace(checkmark_html, '✓')
+        return(var)
+
     def channels(video_html):
         # Define the expression for obtaining channel identifiers
         exp = compile('(?<=href=")/channel/.*(?=">)')
         # For each entry within the $video_html list, return only entries that contain the $exp expression defined above. There should only be one since the $video_html variable is for each individual video's HTML contents
-        id = parse.search(exp, video_html)
+        identifier = parse.search(exp, video_html)
         # Define the expression for obtaining the channel name
         exp = compile('(?<=<p class="channel-name" dir="auto">).*(?=</p>)')
         # For each entry within the $video_html list, return only entries that contain the $exp expression defined above
         name = parse.search(exp, video_html)
+        # If the $name is of a verified user, then replace the checkmark HTML with a unicode checkmark
+        name = parse.verified(name)
         # Return the channel identifier and name
-        return(id, name)
+        return(identifier, name)
     
     def upload_dates(video_html):
         # Define the expression to obtain the upload date from the $video_html list
@@ -337,6 +348,8 @@ class parse:
         title = parse.search(exp, video_html)
         # Convert all HTML encoding to ASCII (eg. "'" = &amp;#39;)
         title = unescape(title)
+        # If the $title is for a playlist of a verified user, then replace the checkmark HTML with a unicode checkmark
+        title = parse.verified(title)
         # Return the title
         return(title)
 
